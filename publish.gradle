@@ -1,0 +1,63 @@
+//
+//  Publish script
+//
+//  Edit gradle.properties of a project being published to configure resulting POM and repository URL.
+//  Dependencies are automatically translated from gradle dependencies into POM dependencies.
+//  To publish open up "Gradle tasks" panel and run "uploadArchives" task.
+//
+//  Example gradle.properties that use custom shared folder on a PC for a repository:
+//
+//  POM_VERSION_NAME=0.0.1
+//  POM_GROUP_ID=com.ipnossoft.api
+//  POM_ARTIFACT_ID=my-lib
+//  POM_PACKAGING=aar
+//  POM_NAME=Library name
+//  POM_DESCRIPTION=Some description
+//  POM_REPOSITORY_URL=file://markopc/c/test
+//
+//  To later use this library as maven dependency add gradle dependency like so:
+//      compile 'com.ipnossoft.api:my-lib:0.0.1@aar'
+//
+//  And also add mavenLocal() to repositories!
+
+apply plugin: 'maven'
+
+afterEvaluate { project ->
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                pom.groupId = POM_GROUP_ID
+                pom.artifactId = POM_ARTIFACT_ID
+                pom.version = POM_VERSION_NAME
+
+                repository(url: POM_REPOSITORY_URL)
+
+                pom.project {
+                    name POM_NAME
+                    packaging POM_PACKAGING
+                    description POM_DESCRIPTION
+                }
+            }
+        }
+    }
+
+    task androidJavadocs(type: Javadoc) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    }
+
+    task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+        classifier = 'javadoc'
+        from androidJavadocs.destinationDir
+    }
+
+    task androidSourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.sourceFiles
+    }
+
+    artifacts {
+        archives androidSourcesJar
+        archives androidJavadocsJar
+    }
+}
